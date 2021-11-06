@@ -1,0 +1,52 @@
+---
+version: "3.9"
+
+services:
+  qr-generator:
+    image: qr-generator:latest
+    container_name: qr-generator
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: production
+    command:
+      - "nginx"
+      - "-g"
+      - "daemon off;"
+    volumes:
+      - type: volume
+        source: nginx-tmp
+        target: /tmp
+        read_only: false
+    read_only: true
+    ports:
+      - target: 8080
+        published: 80
+        protocol: tcp
+        mode: host
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      timeout: 1s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - qr-generator
+
+volumes:
+  nginx-tmp:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+
+networks:
+  qr-generator:
+    driver: bridge
+    name: qr-generator
+    external: false
