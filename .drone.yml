@@ -29,3 +29,18 @@ steps:
         --destination "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front:$${DRONE_BRANCH}-$${DRONE_BUILD_NUMBER}"
         --destination "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front:latest"
       - echo "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front:$${DRONE_BRANCH}-$${DRONE_BUILD_NUMBER}"
+
+  - name: deploy
+    image: alpine/k8s
+    pull: always
+    environment:
+      KUBE_CONFIG:
+        from_secret: "kube_config"
+    commands:
+      - "echo $${KUBE_CONFIG} > .kube/config"
+      - >-
+        kubectl --kubeconfig=.kube/config create --validate=true
+        --dry-run=client --filename=deploy/kubernetes/manifest.yml
+      - >-
+        kubectl --kubeconfig=.kube/config create
+        --filename=deploy/kubernetes/manifest.yml
