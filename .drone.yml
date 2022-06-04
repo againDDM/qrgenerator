@@ -27,4 +27,5 @@ steps:
         --cache=true
         --cache-repo "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front-cache"
         --destination "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front:$${DRONE_BRANCH}-$${DRONE_BUILD_NUMBER}"
+        --destination "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front:latest"
       - echo "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front:$${DRONE_BRANCH}-$${DRONE_BUILD_NUMBER}"

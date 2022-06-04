@@ -8,7 +8,8 @@ RUN npm run build
 
 FROM nginx:1.22 as prod
 
-EXPOSE 8080
+EXPOSE 8000/tcp
+EXPOSE 8080/tcp
 USER nginx
 COPY --chown=nginx:nginx "nginx.conf" "/etc/nginx/nginx.conf"
 COPY --from=build --chown=nginx:nginx "/app/build" "/usr/share/nginx/html"
