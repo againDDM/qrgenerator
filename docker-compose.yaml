@@ -11,8 +11,8 @@ services:
       target: production
     command:
       - "nginx"
-      - "-g"
-      - "daemon off;"
+      - "-c"
+      - "/etc/nginx/nginx.conf"
     volumes:
       - type: volume
         source: nginx-tmp
@@ -21,7 +21,7 @@ services:
     read_only: true
     ports:
       - target: 8080
-        published: 80
+        published: 8080
         protocol: tcp
         mode: host
     healthcheck:

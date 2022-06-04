@@ -6,9 +6,12 @@ RUN npm install --silent
 COPY . /app
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.20 as production
-COPY --from=build /app/build /usr/share/nginx/html
+FROM nginx:1.22 as prod
+
 EXPOSE 8080
-CMD ["nginx", "-g", "daemon off;"]
+USER nginx
+COPY --chown=nginx:nginx "nginx.conf" "/etc/nginx/nginx.conf"
+COPY --from=build --chown=nginx:nginx "/app/build" "/usr/share/nginx/html"
+CMD ["nginx", "-c", "/etc/nginx/nginx.conf"]
 HEALTHCHECK --interval=10s --timeout=1s --start-period=5s --retries=3 \
     CMD ["curl", "-f", "http://localhost:8080"]

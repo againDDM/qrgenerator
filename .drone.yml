@@ -1,0 +1,30 @@
+---
+kind: pipeline
+type: kubernetes
+name: develop
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+  - name: build
+    image: gcr.io/kaniko-project/executor:debug
+    pull: if-not-exists
+    environment:
+      DOCKER_PUSH_REGISTRY:
+        from_secret: "docker_push_registry"
+      DOCKER_CONFIG_JSON:
+        from_secret: "docker_config_json"
+    commands:
+      - echo $${DOCKER_CONFIG_JSON} > /kaniko/.docker/config.json
+      - >-
+        /kaniko/executor --force
+        --insecure-registry $${DOCKER_PUSH_REGISTRY}
+        --context ./
+        --dockerfile /Dockerfile
+        --target prod
+        --cache=true
+        --cache-repo "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front-cache"
+        --destination "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front:$${DRONE_BRANCH}-$${DRONE_BUILD_NUMBER}"
+      - echo "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front:$${DRONE_BRANCH}-$${DRONE_BUILD_NUMBER}"
