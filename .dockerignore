@@ -1,5 +1,6 @@
 .gitignore
 .dockerignore
+.drone.yml
 Dockerfile
 docker-compose.yaml
 docker-compose.yml
