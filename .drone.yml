@@ -31,12 +31,13 @@ steps:
       - echo "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front:$${DRONE_BRANCH}-$${DRONE_BUILD_NUMBER}"
 
   - name: deploy
-    image: rancher/kubectl:v1.23.3-arm64
-    pull: if-not-exists
+    image: againddm/ci-kubectl:v1.24.1
+    pull: always
     environment:
       KUBE_CONFIG:
         from_secret: "kube_config"
     commands:
+      - mkdir -p .kube
       - echo $${KUBE_CONFIG} > .kube/config
       - >-
         kubectl --kubeconfig=.kube/config create --validate=true
