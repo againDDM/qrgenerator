@@ -12,10 +12,10 @@ metadata:
   namespace: "qrgenerator"
 spec:
   hard:
-    requests.cpu: "100m"
-    requests.memory: 64Mi
-    limits.cpu: "200m"
-    limits.memory: 128Mi
+    requests.cpu: "200m"
+    requests.memory: 128Mi
+    limits.cpu: "300m"
+    limits.memory: 196Mi
 ...
 ---
 apiVersion: v1
@@ -55,7 +55,7 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
-      maxSurge: 1
+      maxSurge: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: qrgenerator-front
@@ -116,11 +116,11 @@ spec:
             - "telegraf"
           args:
             - "--config"
-            - "/etc/telegraf.conf"
+            - "/etc/telegraf/telegraf.conf"
           resources:
             limits:
-              cpu: "100m"
-              memory: "64Mi"
+              cpu: "50m"
+              memory: "32Mi"
             requests:
               cpu: "1m"
               memory: "8Mi"
@@ -154,7 +154,7 @@ spec:
             successThreshold: 1
             failureThreshold: 2
           volumeMounts:
-            - mountPath: /etc/telegraf.conf
+            - mountPath: /etc/telegraf
               name: telegraf-conf
       volumes:
         - name: nginx-tmp
