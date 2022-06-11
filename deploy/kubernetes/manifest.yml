@@ -18,6 +18,30 @@ spec:
     limits.memory: 128Mi
 ...
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telegraf-conf
+  namespace: "qrgenerator"
+data:
+  telegraf.conf: |
+    [global_tags]
+      project = "qrgenerator"
+    [agent]
+      interval = "30s"
+      logtarget = "stderr"
+      omit_hostname = false
+    [[inputs.nginx]]
+      urls = ["http://localhost:8000/basic_status"]
+      response_timeout = "5s"
+    [[outputs.prometheus_client]]
+      listen = ":9273"
+      metric_version = 2
+      path = "/metrics"
+      expiration_interval = "120s"
+      collectors_exclude = ["gocollector", "process"]
+...
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -85,10 +109,60 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: nginx-tmp
+        - name: telegraf-sidecar
+          imagePullPolicy: Always
+          image: "telegraf:1.22"
+          command:
+            - "telegraf"
+          args:
+            - "--config"
+            - "/etc/telegraf.conf"
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+            requests:
+              cpu: "1m"
+              memory: "8Mi"
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsUser: 999
+            runAsGroup: 999
+          ports:
+            - name: metrics-port
+              containerPort: 9273
+          startupProbe:
+            httpGet:
+              path: /metrics
+              port: metrics-port
+            failureThreshold: 30
+            periodSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics-port
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            successThreshold: 1
+            failureThreshold: 2
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics-port
+            initialDelaySeconds: 5
+            periodSeconds: 1
+            successThreshold: 1
+            failureThreshold: 2
+          volumeMounts:
+            - mountPath: /etc/telegraf.conf
+              name: telegraf-conf
       volumes:
         - name: nginx-tmp
           emptyDir:
             sizeLimit: 64Mi
+        - name: telegraf-conf
+          configMap:
+            name: telegraf-conf
 ...
 ---
 kind: Service
