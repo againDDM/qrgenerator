@@ -42,10 +42,10 @@ steps:
       - mkdir -p .kube
       - >-
         kubectl --kubeconfig=.kube/config config
-        set-credentials drone-deploy --token=${K8S_TOKEN}
+        set-credentials drone-deploy --token=$${K8S_TOKEN}
       - >-
         kubectl --kubeconfig=.kube/config config
-        set-cluster drone-deploy --server=${K8S_SERVER}
+        set-cluster drone-deploy --server=$${K8S_SERVER}
         --insecure-skip-tls-verify=true
       - >-
         kubectl --kubeconfig=.kube/config config
