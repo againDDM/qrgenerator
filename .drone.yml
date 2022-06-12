@@ -55,9 +55,9 @@ steps:
         kubectl --kubeconfig=.kube/config config
         use-context drone-deploy
       - >-
-        kubectl --kubeconfig=.kube/config create
+        kubectl --kubeconfig=.kube/config apply
         --validate=true --dry-run=client
         --filename=deploy/kubernetes/manifest.yml
       - >-
-        kubectl --kubeconfig=.kube/config create
+        kubectl --kubeconfig=.kube/config apply
         --filename=deploy/kubernetes/manifest.yml
