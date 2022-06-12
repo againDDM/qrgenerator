@@ -34,14 +34,30 @@ steps:
     image: againddm/ci-kubectl:v1.24.1
     pull: always
     environment:
-      KUBE_CONFIG:
-        from_secret: "kube_config"
+      K8S_TOKEN:
+        from_secret: "k8s_token"
+      K8S_SERVER:
+        from_secret: "k8s_server"
     commands:
       - mkdir -p .kube
-      - echo $${KUBE_CONFIG} > .kube/config
       - >-
-        kubectl --kubeconfig=.kube/config create --validate=true
-        --dry-run=client --filename=deploy/kubernetes/manifest.yml
+        kubectl --kubeconfig=.kube/config config
+        set-credentials drone-deploy --token=${K8S_TOKEN}
+      - >-
+        kubectl --kubeconfig=.kube/config config
+        set-cluster drone-deploy --server=${K8S_SERVER}
+        --insecure-skip-tls-verify=true
+      - >-
+        kubectl --kubeconfig=.kube/config config
+        set-context drone-deploy
+        --cluster=drone-deploy --user=drone-deploy
+      - >-
+        kubectl --kubeconfig=.kube/config config
+        use-context drone-deploy
+      - >-
+        kubectl --kubeconfig=.kube/config create
+        --validate=true --dry-run=client
+        --filename=deploy/kubernetes/manifest.yml
       - >-
         kubectl --kubeconfig=.kube/config create
         --filename=deploy/kubernetes/manifest.yml
