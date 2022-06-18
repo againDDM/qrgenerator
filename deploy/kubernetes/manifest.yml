@@ -2,27 +2,27 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: "qrgenerator"
+  name: "qrgen"
 ...
 ---
 apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: qrgenerator-quota
-  namespace: "qrgenerator"
+  namespace: "qrgen"
 spec:
   hard:
-    requests.cpu: "200m"
-    requests.memory: 128Mi
-    limits.cpu: "300m"
-    limits.memory: 196Mi
+    requests.cpu: "1200m"
+    requests.memory: 512Mi
+    limits.cpu: "1200m"
+    limits.memory: 512Mi
 ...
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: telegraf-conf
-  namespace: "qrgenerator"
+  namespace: "qrgen"
 data:
   telegraf.conf: |
     [global_tags]
@@ -46,16 +46,15 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: qrgenerator-front
-  namespace: "qrgenerator"
+  namespace: "qrgen"
   labels:
     app.kubernetes.io/name: qrgenerator-front
 spec:
-  replicas: 2
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 0
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: qrgenerator-front
@@ -63,6 +62,10 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: qrgenerator-front
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "9273"
     spec:
       containers:
         - name: front-nginx
@@ -70,11 +73,11 @@ spec:
           image: "registry.againddm.keenetic.pro/homelab/qr-front:latest"
           resources:
             limits:
-              cpu: "100m"
+              cpu: "250m"
               memory: "64Mi"
             requests:
-              cpu: "1m"
-              memory: "8Mi"
+              cpu: "250m"
+              memory: "64Mi"
           securityContext:
             readOnlyRootFilesystem: true
             runAsUser: 101
@@ -95,20 +98,23 @@ spec:
               path: /ping
               port: service-port
             initialDelaySeconds: 5
-            periodSeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
             successThreshold: 1
-            failureThreshold: 2
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /
               port: frontend-port
             initialDelaySeconds: 5
-            periodSeconds: 1
-            successThreshold: 1
-            failureThreshold: 2
+            periodSeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 3
+            failureThreshold: 3
           volumeMounts:
             - mountPath: /tmp
               name: nginx-tmp
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: telegraf-sidecar
           imagePullPolicy: Always
           image: "telegraf:1.22"
@@ -120,10 +126,10 @@ spec:
           resources:
             limits:
               cpu: "50m"
-              memory: "32Mi"
+              memory: "64Mi"
             requests:
-              cpu: "1m"
-              memory: "8Mi"
+              cpu: "50m"
+              memory: "64Mi"
           securityContext:
             readOnlyRootFilesystem: true
             runAsUser: 999
@@ -136,26 +142,29 @@ spec:
               path: /metrics
               port: metrics-port
             failureThreshold: 30
-            periodSeconds: 1
+            periodSeconds: 2
           livenessProbe:
             httpGet:
               path: /metrics
               port: metrics-port
             initialDelaySeconds: 5
-            periodSeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
             successThreshold: 1
-            failureThreshold: 2
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /metrics
               port: metrics-port
             initialDelaySeconds: 5
-            periodSeconds: 1
-            successThreshold: 1
-            failureThreshold: 2
+            periodSeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 2
+            failureThreshold: 3
           volumeMounts:
             - mountPath: /etc/telegraf
               name: telegraf-conf
+          terminationMessagePolicy: FallbackToLogsOnError
       volumes:
         - name: nginx-tmp
           emptyDir:
@@ -163,13 +172,46 @@ spec:
         - name: telegraf-conf
           configMap:
             name: telegraf-conf
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - qrgenerator-front
+                topologyKey: kubernetes.io/hostname
+...
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: qrgenerator-front-hpa
+  namespace: "qrgen"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: qrgenerator-front
+  minReplicas: 2
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
 ...
 ---
 kind: Service
 apiVersion: v1
 metadata:
   name: qrgenerator-front
-  namespace: "qrgenerator"
+  namespace: "qrgen"
   labels:
     app.kubernetes.io/name: qrgenerator-service-front
   annotations:
@@ -188,7 +230,7 @@ kind: Ingress
 apiVersion: networking.k8s.io/v1
 metadata:
   name: qrgenerator
-  namespace: "qrgenerator"
+  namespace: "qrgen"
   labels:
     app.kubernetes.io/name: qrgenerator-ingress
   annotations:

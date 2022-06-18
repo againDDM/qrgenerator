@@ -31,33 +31,18 @@ steps:
       - echo "$${DOCKER_PUSH_REGISTRY}/homelab/qr-front:$${DRONE_BRANCH}-$${DRONE_BUILD_NUMBER}"
 
   - name: deploy
-    image: againddm/ci-kubectl:v1.24.1
+    image: againddm/ci-kubectl:v1.24.2
     pull: always
     environment:
       K8S_TOKEN:
         from_secret: "k8s_token"
       K8S_SERVER:
         from_secret: "k8s_server"
+      KUBECONFIG: "/opt/workshop/.kube/config"
     commands:
-      - mkdir -p .kube
-      - >-
-        kubectl --kubeconfig=.kube/config config
-        set-credentials drone-deploy --token=$${K8S_TOKEN}
-      - >-
-        kubectl --kubeconfig=.kube/config config
-        set-cluster drone-deploy --server=$${K8S_SERVER}
-        --insecure-skip-tls-verify=true
-      - >-
-        kubectl --kubeconfig=.kube/config config
-        set-context drone-deploy
-        --cluster=drone-deploy --user=drone-deploy
-      - >-
-        kubectl --kubeconfig=.kube/config config
-        use-context drone-deploy
-      - >-
-        kubectl --kubeconfig=.kube/config apply
-        --validate=true --dry-run=client
-        --filename=deploy/kubernetes/manifest.yml
-      - >-
-        kubectl --kubeconfig=.kube/config apply
-        --filename=deploy/kubernetes/manifest.yml
+      - kubectl config set-credentials drone-deploy --token=$${K8S_TOKEN}
+      - kubectl config set-cluster drone-deploy --server=$${K8S_SERVER} --insecure-skip-tls-verify=true
+      - kubectl config set-context drone-deploy --cluster=drone-deploy --user=drone-deploy
+      - kubectl config use-context drone-deploy
+      - kubectl apply --validate=true --dry-run=client --filename=deploy/kubernetes/manifest.yml
+      - kubectl apply --filename=deploy/kubernetes/manifest.yml
