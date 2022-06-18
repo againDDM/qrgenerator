@@ -1,4 +1,5 @@
 ---
+
 kind: pipeline
 type: kubernetes
 name: develop
@@ -32,7 +33,7 @@ steps:
 
   - name: deploy
     image: againddm/ci-kubectl:v1.24.2
-    pull: always
+    pull: if-not-exists
     environment:
       K8S_TOKEN:
         from_secret: "k8s_token"
