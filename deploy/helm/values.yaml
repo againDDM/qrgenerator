@@ -1,0 +1,55 @@
+---
+imagePullPolicy: IfNotPresent
+frontend:
+  config:
+    metrics:
+      scrape: false
+      port: 9273
+      path: "/metrics"
+  deployment:
+    replicas: 2
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 25%
+        maxSurge: 25%
+    containers:
+      front:
+        image:
+          repository: "registry.againddm.keenetic.pro/homelab/qr-front"
+          tag: latest
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "32Mi"
+          limits:
+            cpu: "250m"
+            memory: "32Mi"
+      telegraf:
+        image:
+          repository: "telegraf"
+          tag: "1.22"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "50m"
+              memory: "32Mi"
+  hpa:
+    enabled: no
+    minReplicas: 2
+    maxReplicas: 3
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 50
+  service:
+    port: 8080
+  ingress:
+    host: "qr.againddm.keenetic.pro"
+    class: "traefik"
+...
