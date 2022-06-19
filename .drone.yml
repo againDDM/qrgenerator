@@ -35,8 +35,6 @@ steps:
     image: againddm/ci-helm:v3.9.0
     pull: if-not-exists
     environment:
-      DOCKER_PULL_REGISTRY:
-        from_secret: "docker_pull_registry"
       K8S_TOKEN:
         from_secret: "k8s_token"
       K8S_SERVER:
@@ -49,5 +47,4 @@ steps:
       - kubectl config use-context drone-deploy
       - >-
         helm upgrade --install --namespace qrgenerator --create-namespace --debug qrgenerator ./deploy/helm
-        --set "frontend.deployment.containers.front.image.repository=$${DOCKER_PULL_REGISTRY}/homelab/qr-front"
         --set "frontend.deployment.containers.front.image.tag=$${DRONE_BRANCH}-$${DRONE_BUILD_NUMBER}"
